@@ -9,8 +9,11 @@ import org.springframework.context.annotation.Configuration;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.OnlineStatus;
+import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Activity;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
+import net.dv8tion.jda.api.interactions.commands.DefaultMemberPermissions;
+import net.dv8tion.jda.api.interactions.commands.build.Commands;
 
 @Configuration
 public class BotMain {
@@ -26,12 +29,11 @@ public class BotMain {
                 .build()
                 .awaitReady();
 
-        // jda.updateCommands().addCommands(
-        //         Commands.slash("stats", "Статистика раундов")
-        //                 .addOptions(new OptionData(OptionType.INTEGER, "days", "За сколько дней", false)
-        //                         .setMinValue(1)
-        //                         .setMaxValue(90)))
-        //         .queue();
+        jda.updateCommands().addCommands(
+                Commands.slash("stats", "Статистика раундов")
+                        .setDefaultPermissions(
+                                DefaultMemberPermissions.enabledFor(Permission.ADMINISTRATOR)))
+                .queue();
 
         return jda;
     }
