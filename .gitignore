@@ -1,0 +1,37 @@
+### ================== Java ================== ###
+
+backend/HELP.md
+
+# Outputs
+*.class
+*.jar
+
+target/
+backend/.mvn/wrapper/maven-wrapper.jar
+!**/backend/src/main/**/target/
+!**/backend/src/test/**/target/
+
+### STS ###
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+
+
+### ================== Shared ================== ###
+
+# IDE
+.vscode/
+
+# Logs
+*.log
+logs/
+spring.log
+
+# Enviroment
+.env
+.env.*
+!.env.example
