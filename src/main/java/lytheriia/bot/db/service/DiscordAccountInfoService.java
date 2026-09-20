@@ -1,5 +1,8 @@
 package lytheriia.bot.db.service;
 
+import java.util.Map;
+import java.util.stream.Collectors;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -45,4 +48,21 @@ public class DiscordAccountInfoService {
             return infoRepository.save(new DiscordAccountInfoEntity(discordId));
         });
     }
+
+    // Maybe del in future start
+    @Transactional(readOnly = true)
+    public Map<Long, AccountStatus> getAllStatuses() {
+        return infoRepository.findAll().stream()
+                .collect(Collectors.toMap(
+                        DiscordAccountInfoEntity::getDiscordId,
+                        i -> new AccountStatus(i.isVerified(), i.isBooster())));
+    }
+
+    @Transactional
+    public void setStatus(long discordId, boolean verified, boolean booster) {
+        DiscordAccountInfoEntity info = getOrCreate(discordId);
+        info.setVerified(verified);
+        info.setBooster(booster);
+    }
+    // end
 }

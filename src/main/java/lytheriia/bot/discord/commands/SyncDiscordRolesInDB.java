@@ -1,11 +1,10 @@
 package lytheriia.bot.discord.commands;
 
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,18 +13,12 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.task.TaskExecutor;
 import org.springframework.stereotype.Component;
 
-import lytheriia.bot.db.entity.DiscordLinkedAccountEntity;
-import lytheriia.bot.db.repository.DiscordLinkRepository;
 import lytheriia.bot.db.service.DiscordAccountInfoService;
+import lytheriia.bot.db.service.DiscordAccountInfoService.AccountStatus;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
-import net.dv8tion.jda.api.entities.Role;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
-import net.dv8tion.jda.api.interactions.commands.OptionMapping;
-import net.dv8tion.jda.api.interactions.commands.OptionType;
-import net.dv8tion.jda.api.interactions.commands.build.OptionData;
-import net.dv8tion.jda.api.utils.FileUpload;
 
 @Component
 public class SyncDiscordRolesInDB extends ListenerAdapter {
@@ -34,16 +27,10 @@ public class SyncDiscordRolesInDB extends ListenerAdapter {
 
     public static final String COMMAND = "syncdbroles";
 
-    public static final List<String> MANAGED = List.of(
-            "verified",
-            "boosty");
-
     private final long developerId;
     private final long verifiedRoleId;
     private final long boosterRoleId;
-
     private final DiscordAccountInfoService accountService;
-    private final DiscordLinkRepository links;
     private final TaskExecutor executor;
 
     private final AtomicBoolean running = new AtomicBoolean(false);
@@ -53,26 +40,13 @@ public class SyncDiscordRolesInDB extends ListenerAdapter {
             @Value("${discord.roles.verified}") long verifiedRoleId,
             @Value("${discord.roles.booster}") long boosterRoleId,
             DiscordAccountInfoService accountService,
-            DiscordLinkRepository links,
             @Qualifier("applicationTaskExecutor") TaskExecutor executor) {
+
         this.developerId = developerId;
         this.verifiedRoleId = verifiedRoleId;
         this.boosterRoleId = boosterRoleId;
         this.accountService = accountService;
-        this.links = links;
         this.executor = executor;
-    }
-
-    public static OptionData rolesOption() {
-        OptionData option = new OptionData(
-                OptionType.STRING,
-                "roles",
-                "Роль для синхронизации",
-                true);
-
-        MANAGED.forEach(role -> option.addChoice(role, role));
-
-        return option;
     }
 
     @Override
@@ -83,113 +57,86 @@ public class SyncDiscordRolesInDB extends ListenerAdapter {
         event.deferReply(true).queue();
 
         if (event.getUser().getIdLong() != developerId) {
-            event.getHook().sendMessage("Данная команда доступна только главному разработчику.").queue();
+            event.getHook().sendMessage("Команда доступна только главному разработчику.").queue();
             return;
         }
 
         Guild guild = event.getGuild();
-        String roleName = event.getOption("roles", OptionMapping::getAsString);
-
         if (guild == null) {
-            event.getHook().sendMessage("Команда может использоваться только на сервере.").queue();
-            return;
-        }
-
-        if (roleName == null || !MANAGED.contains(roleName)) {
-            event.getHook().sendMessage("Неизвестная роль: `" + roleName + "`.").queue();
-            return;
-        }
-
-        long roleId = roleName.equals("verified") ? verifiedRoleId : boosterRoleId;
-        Role role = guild.getRoleById(roleId);
-
-        if (role == null) {
-            event.getHook().sendMessage("Роль `" + roleName + "` не найдена на сервере.").queue();
+            event.getHook().sendMessage("Команда работает только на сервере.").queue();
             return;
         }
 
         if (!running.compareAndSet(false, true)) {
-            event.getHook().sendMessage("Синхронизация уже выполняется, подождите завершения.").queue();
+            event.getHook().sendMessage("Синхронизация уже выполняется.").queue();
             return;
         }
 
         executor.execute(() -> {
             try {
-                sync(event, guild, role, roleName);
+                sync(event, guild);
             } finally {
                 running.set(false);
             }
         });
     }
 
-    private void sync(SlashCommandInteractionEvent event, Guild guild, Role role, String roleName) {
+    private void sync(SlashCommandInteractionEvent event, Guild guild) {
         try {
-            List<Member> withRole = guild.findMembersWithRoles(role).get();
-            Set<Long> withRoleIds = withRole.stream()
-                    .map(Member::getIdLong)
-                    .collect(Collectors.toSet());
+            List<Member> members = guild.loadMembers().get();
+            Map<Long, AccountStatus> db = accountService.getAllStatuses();
 
-            Set<Long> linkedIds = links.findAll().stream()
-                    .map(DiscordLinkedAccountEntity::getDiscordId)
-                    .collect(Collectors.toSet());
+            Set<Long> memberIds = new HashSet<>();
+            int added = 0;
+            int updated = 0;
+            int left = 0;
 
-            int granted = 0;
-            int revoked = 0;
-            List<Long> notLinked = new ArrayList<>();
+            for (Member member : members) {
+                if (member.getUser().isBot())
+                    continue;
 
-            for (Member member : withRole) {
                 long id = member.getIdLong();
+                memberIds.add(id);
 
-                if (linkedIds.contains(id)) {
-                    apply(roleName, id, true);
-                    granted++;
-                } else {
-                    notLinked.add(id);
+                boolean verified = hasRole(member, verifiedRoleId);
+                boolean booster = hasRole(member, boosterRoleId);
+                AccountStatus row = db.get(id);
+
+                if (row == null) {
+                    if (!verified && !booster)
+                        continue;
+
+                    accountService.setStatus(id, verified, booster);
+                    added++;
+                } else if (row.verified() != verified || row.booster() != booster) {
+                    accountService.setStatus(id, verified, booster);
+                    updated++;
                 }
             }
 
-            for (long id : linkedIds) {
-                if (!withRoleIds.contains(id)) {
-                    apply(roleName, id, false);
-                    revoked++;
+            for (Map.Entry<Long, AccountStatus> entry : db.entrySet()) {
+                AccountStatus row = entry.getValue();
+                if (!memberIds.contains(entry.getKey()) && (row.verified() || row.booster())) {
+                    accountService.setStatus(entry.getKey(), false, false);
+                    left++;
                 }
             }
 
-            String summary = "Синхронизация роли " + role.getAsMention() + " завершена.\n"
-                    + "Всего с ролью: **" + withRole.size() + "**\n"
-                    + "Привязаны, флаг включён: **" + granted + "**\n"
-                    + "Привязаны, роли нет, флаг снят: **" + revoked + "**\n"
-                    + "Роль есть, аккаунт не привязан: **" + notLinked.size() + "**";
+            event.getHook()
+                    .editOriginal("Готово. Добавлено: " + added + ", обновлено: " + updated
+                            + ", сброшено у вышедших: " + left + ".")
+                    .queue();
 
-            var action = event.getHook().editOriginal(summary);
-
-            if (!notLinked.isEmpty()) {
-                String list = notLinked.stream()
-                        .map(String::valueOf)
-                        .collect(Collectors.joining("\n"));
-
-                action = action.setFiles(
-                        FileUpload.fromData(list.getBytes(StandardCharsets.UTF_8), "not-linked.txt"));
-            }
-
-            action.queue();
-
-            log.info("syncdbroles {}: withRole={}, granted={}, revoked={}, notLinked={}",
-                    roleName, withRole.size(), granted, revoked, notLinked.size());
+            log.info("syncdbroles: members={}, added={}, updated={}, left={}",
+                    memberIds.size(), added, updated, left);
 
         } catch (Exception e) {
             log.error("syncdbroles failed", e);
-            event.getHook()
-                    .editOriginal("Синхронизация прервана ошибкой: " + e.getClass().getSimpleName())
-                    .queue();
+            event.getHook().editOriginal("Ошибка: " + e.getClass().getSimpleName()).queue();
         }
     }
 
-    private void apply(String roleName, long discordId, boolean value) {
-        switch (roleName) {
-            case "verified" -> accountService.setVerified(discordId, value);
-            case "boosty" -> accountService.setBooster(discordId, value);
-            default -> throw new IllegalArgumentException("Unknown role: " + roleName);
-        }
+    private static boolean hasRole(Member member, long roleId) {
+        return member.getRoles().stream().anyMatch(r -> r.getIdLong() == roleId);
     }
 }
