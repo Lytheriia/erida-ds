@@ -19,7 +19,7 @@ public class DiscordLinkingService {
         LINKED, ALREADY_LINKED, INVALID_CODE, ACCOUNT_TAKEN
     }
 
-    private static final Duration TTL = Duration.ofMinutes(10);
+    private static final Duration TTL = Duration.ofMinutes(3);
     private final StringRedisTemplate redis;
     private final DiscordLinkRepository links;
 

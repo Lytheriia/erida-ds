@@ -51,7 +51,7 @@ public class LinkPanel extends ListenerAdapter {
                                                 2. Скопируйте выданный код.
                                                 3. Нажмите кнопку ниже и вставьте код.
 
-                                                Код действует 10 минут.""")
+                                                Код действует 3 минуты.""")
                                 .setColor(DiscordBaseColors.BASE_EMBED_COLOR)
                                 .build();
 
