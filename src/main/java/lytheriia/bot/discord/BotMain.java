@@ -9,7 +9,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import lytheriia.bot.db.service.CommandPermissionService;
-import lytheriia.bot.discord.commands.SyncDiscordRolesInDB;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.OnlineStatus;
@@ -89,8 +88,7 @@ public class BotMain {
                                                 .addOptions(commandsOption()),
                                 Commands.slash("syncdbroles", "Синхронизация дискорд сервера с базой данных")
                                                 .setDefaultPermissions(DefaultMemberPermissions
-                                                                .enabledFor(Permission.ADMINISTRATOR))
-                                                .addOptions(SyncDiscordRolesInDB.rolesOption()))
+                                                                .enabledFor(Permission.ADMINISTRATOR)))
                                 .queue(
                                                 ok -> log.info("Registered {} guild commands", ok.size()),
                                                 err -> log.error("Failed to register commands", err));
