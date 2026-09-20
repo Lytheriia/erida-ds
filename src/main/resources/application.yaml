@@ -5,6 +5,10 @@ spring:
     scheduling:
       pool-size: 2
 
+  threads:
+    virtual:
+      enabled: true
+
   datasource:
     url: jdbc:postgresql://postgres:7777/${POSTGRES_DB}
     username: ${POSTGRES_USER}
@@ -24,6 +28,10 @@ server:
 discord:
   token: ${DISCORD_TOKEN}
   guild-id: ${DISCORD_GUILD_ID}
+  roles:
+    verified: 1359900955596034271
+    booster: 1359980717387550893
+  developer-id: 431760864631324674
 
 management:
   endpoints:

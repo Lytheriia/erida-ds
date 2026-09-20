@@ -22,10 +22,13 @@ public class DiscordLinkingService {
     private static final Duration TTL = Duration.ofMinutes(3);
     private final StringRedisTemplate redis;
     private final DiscordLinkRepository links;
+    private final DiscordAccountInfoService info;
 
-    public DiscordLinkingService(StringRedisTemplate redis, DiscordLinkRepository links) {
+    public DiscordLinkingService(StringRedisTemplate redis, DiscordLinkRepository links,
+            DiscordAccountInfoService info) {
         this.redis = redis;
         this.links = links;
+        this.info = info;
     }
 
     private static String normalize(String code) {
@@ -48,6 +51,9 @@ public class DiscordLinkingService {
 
         try {
             links.save(new DiscordLinkedAccountEntity(discordId, userId.get()));
+
+            info.createIfMissing(discordId);
+
             return Result.LINKED;
         } catch (DataIntegrityViolationException e) {
             return Result.ACCOUNT_TAKEN;

@@ -13,8 +13,6 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.ChartUtils;
@@ -28,12 +26,14 @@ import org.jfree.data.time.TimeSeries;
 import org.jfree.data.time.TimeSeriesCollection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.core.task.TaskExecutor;
 import org.springframework.stereotype.Component;
 
-import jakarta.annotation.PreDestroy;
 import lytheriia.bot.db.entity.RoundSnapshotsEntity;
 import lytheriia.bot.db.repository.RoundSnapshotsRepository;
 import lytheriia.bot.discord.data.DiscordBaseColors;
+import lytheriia.bot.discord.utils.CommandGuard;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.MessageEmbed;
 import net.dv8tion.jda.api.entities.emoji.Emoji;
@@ -69,21 +69,23 @@ public class StatsCommand extends ListenerAdapter {
     private static final int TARGET_POINTS = 400;
 
     private final RoundSnapshotsRepository repository;
+    private final TaskExecutor executor;
+    private final CommandGuard guard;
 
-    private final ExecutorService executor = Executors.newFixedThreadPool(2);
-
-    public StatsCommand(RoundSnapshotsRepository repository) {
+    public StatsCommand(RoundSnapshotsRepository repository,
+            @Qualifier("applicationTaskExecutor") TaskExecutor executor,
+            CommandGuard guard) {
         this.repository = repository;
-    }
-
-    @PreDestroy
-    void shutdown() {
-        executor.shutdown();
+        this.executor = executor;
+        this.guard = guard;
     }
 
     @Override
     public void onSlashCommandInteraction(SlashCommandInteractionEvent event) {
         if (!event.getName().equals(COMMAND))
+            return;
+
+        if (!guard.isAllow(event))
             return;
 
         int days = Math.clamp(
