@@ -2,6 +2,8 @@ package lytheriia.bot.discord;
 
 import java.util.List;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -22,6 +24,8 @@ import net.dv8tion.jda.api.interactions.commands.build.OptionData;
 
 @Configuration
 public class BotMain {
+
+        private static final Logger log = LoggerFactory.getLogger(BotMain.class);
 
         @Bean(destroyMethod = "shutdown")
         public JDA jda(@Value("${discord.token}") String token, @Value("${discord.guild-id}") long guildId,
@@ -57,7 +61,9 @@ public class BotMain {
                                                 .addOptions(new OptionData(OptionType.CHANNEL, "channel",
                                                                 "Канал для сообщения", true)
                                                                 .setChannelTypes(ChannelType.TEXT)))
-                                .queue();
+                                .queue(
+                                                ok -> log.info("Registered {} guild commands", ok.size()),
+                                                err -> log.error("Failed to register commands", err));
 
                 return jda;
         }
