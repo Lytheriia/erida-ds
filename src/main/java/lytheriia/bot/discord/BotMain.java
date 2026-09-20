@@ -23,6 +23,7 @@ import net.dv8tion.jda.api.interactions.commands.DefaultMemberPermissions;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.Commands;
 import net.dv8tion.jda.api.interactions.commands.build.OptionData;
+import net.dv8tion.jda.api.requests.GatewayIntent;
 
 @Configuration
 public class BotMain {
@@ -40,6 +41,7 @@ public class BotMain {
                         List<ListenerAdapter> listeners) throws InterruptedException {
 
                 JDA jda = JDABuilder.createLight(token)
+                                .enableIntents(GatewayIntent.GUILD_MEMBERS)
                                 .setStatus(OnlineStatus.DO_NOT_DISTURB)
                                 .setActivity(Activity.customStatus("Запуск..."))
                                 .addEventListeners(listeners.toArray())
