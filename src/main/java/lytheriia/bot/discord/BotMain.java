@@ -11,30 +11,54 @@ import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.OnlineStatus;
 import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Activity;
+import net.dv8tion.jda.api.entities.Guild;
+import net.dv8tion.jda.api.entities.channel.ChannelType;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
+import net.dv8tion.jda.api.interactions.InteractionContextType;
 import net.dv8tion.jda.api.interactions.commands.DefaultMemberPermissions;
+import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.Commands;
+import net.dv8tion.jda.api.interactions.commands.build.OptionData;
 
 @Configuration
 public class BotMain {
 
-    @Bean(destroyMethod = "shutdown")
-    public JDA jda(@Value("${discord.token}") String token,
-            List<ListenerAdapter> listeners) throws InterruptedException {
+        @Bean(destroyMethod = "shutdown")
+        public JDA jda(@Value("${discord.token}") String token, @Value("${discord.guild-id}") long guildId,
+                        List<ListenerAdapter> listeners) throws InterruptedException {
 
-        JDA jda = JDABuilder.createLight(token)
-                .setStatus(OnlineStatus.DO_NOT_DISTURB)
-                .setActivity(Activity.customStatus("Запуск..."))
-                .addEventListeners(listeners.toArray())
-                .build()
-                .awaitReady();
+                JDA jda = JDABuilder.createLight(token)
+                                .setStatus(OnlineStatus.DO_NOT_DISTURB)
+                                .setActivity(Activity.customStatus("Запуск..."))
+                                .addEventListeners(listeners.toArray())
+                                .build()
+                                .awaitReady();
 
-        jda.updateCommands().addCommands(
-                Commands.slash("stats", "Статистика раундов")
-                        .setDefaultPermissions(
-                                DefaultMemberPermissions.enabledFor(Permission.ADMINISTRATOR)))
-                .queue();
+                jda.getGuilds().stream()
+                                .filter(g -> g.getIdLong() != guildId)
+                                .forEach(g -> g.leave().queue());
 
-        return jda;
-    }
+                Guild guild = jda.getGuildById(guildId);
+                if (guild == null) {
+                        throw new IllegalStateException("Main guild not found : " + guildId);
+                }
+
+                jda.updateCommands().queue();
+
+                jda.updateCommands().addCommands(
+                                Commands.slash("stats", "Статистика раундов")
+                                                .setDefaultPermissions(DefaultMemberPermissions
+                                                                .enabledFor(Permission.ADMINISTRATOR)),
+
+                                Commands.slash("link-setup", "Отправить сообщение с кнопкой привязки")
+                                                .setContexts(InteractionContextType.GUILD)
+                                                .setDefaultPermissions(DefaultMemberPermissions
+                                                                .enabledFor(Permission.ADMINISTRATOR))
+                                                .addOptions(new OptionData(OptionType.CHANNEL, "channel",
+                                                                "Канал для сообщения", true)
+                                                                .setChannelTypes(ChannelType.TEXT)))
+                                .queue();
+
+                return jda;
+        }
 }

@@ -16,9 +16,17 @@ spring:
 internal:
   api:
     key: ${INTERNAL_API_KEY}
-
+    allowed-ips: ${API_ALLOWED_IPS:}
+    
 server:
   port: ${BACKEND_PORT:8080}
 
 discord:
   token: ${DISCORD_TOKEN}
+  guild-id: ${DISCORD_GUILD_ID}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health

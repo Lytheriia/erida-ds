@@ -3,27 +3,56 @@ services:
     build:
       context: ./
       dockerfile: Dockerfile
+    restart: unless-stopped
     ports:
-    - "${API_PORT}:5432"
+      - "${API_PORT}:${API_PORT}"
     environment:
-      - INTERNAL_API_KEY=${INTERNAL_API_KEY}
-      - BACKEND_PORT=${API_PORT}
-      - DISCORD_TOKEN=${DISCORD_TOKEN}
-      - SS14_SERVER_IP=${SS14_SERVER_IP}
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/${POSTGRES_DB}
-      - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER}
-      - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASSWORD}
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY}
+      BACKEND_PORT: ${API_PORT}
+      DISCORD_TOKEN: ${DISCORD_TOKEN}
+      SS14_SERVER_IP: ${SS14_SERVER_IP}
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: 6379
+      DISCORD_GUILD_ID: ${DISCORD_GUILD_ID}
+      API_ALLOWED_IPS: ${API_ALLOWED_IPS}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     networks:
       - app-network
 
   postgres:
-    image: postgres
+    image: postgres:latest
+    restart: unless-stopped
     environment:
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     ports:
-    - "127.0.0.1:${POSTGRES_PORT}:5432"
+      - "127.0.0.1:${POSTGRES_PORT}:5432"
+    volumes:
+      - ${HOME}/erida-bot:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks:
+      - app-network
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
     networks:
       - app-network
 
