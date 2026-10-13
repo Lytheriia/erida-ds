@@ -97,7 +97,7 @@ public class StatsCommand extends ListenerAdapter {
         executor.execute(() -> {
             try {
                 event.getHook().sendMessage(render(days, userId)).queue();
-            } catch (Exception e) {
+            } catch (IOException e) {
                 log.error("Stats render error", e);
                 event.getHook().sendMessage("Не удалось построить график.").queue();
             }
@@ -191,7 +191,7 @@ public class StatsCommand extends ListenerAdapter {
                         .editOriginal(MessageEditData.fromCreateData(render(days, ownerId)))
                         .queue();
 
-            } catch (Exception e) {
+            } catch (IOException e) {
                 log.error("Stats render error", e);
                 event.getHook().sendMessage("Не удалось построить график.")
                         .setEphemeral(true).queue();
@@ -259,8 +259,6 @@ public class StatsCommand extends ListenerAdapter {
         Color grid = new Color(DiscordBaseColors.CHART_GRID);
 
         Color text = new Color(DiscordBaseColors.CHART_TEXT);
-
-        Color line = new Color(DiscordBaseColors.CHART_LINE);
 
         Font font = new Font("SansSerif", Font.PLAIN, 14);
 

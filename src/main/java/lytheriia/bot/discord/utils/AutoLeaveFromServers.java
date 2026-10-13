@@ -1,8 +1,8 @@
 package lytheriia.bot.discord.utils;
 
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import lytheriia.bot.properties.DiscordProperties;
 import net.dv8tion.jda.api.events.guild.GuildJoinEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 
@@ -12,8 +12,8 @@ public class AutoLeaveFromServers extends ListenerAdapter {
 
     private final long allowedGuildId;
 
-    public AutoLeaveFromServers(@Value("${discord.guild-id}") long allowedGuildId) {
-        this.allowedGuildId = allowedGuildId;
+    public AutoLeaveFromServers(DiscordProperties props) {
+        this.allowedGuildId = props.getGuildId();
     }
 
     @Override

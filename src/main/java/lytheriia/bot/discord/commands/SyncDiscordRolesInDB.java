@@ -9,12 +9,12 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.task.TaskExecutor;
 import org.springframework.stereotype.Component;
 
 import lytheriia.bot.db.service.DiscordAccountInfoService;
 import lytheriia.bot.db.service.DiscordAccountInfoService.AccountStatus;
+import lytheriia.bot.properties.DiscordProperties;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
@@ -36,15 +36,15 @@ public class SyncDiscordRolesInDB extends ListenerAdapter {
     private final AtomicBoolean running = new AtomicBoolean(false);
 
     public SyncDiscordRolesInDB(
-            @Value("${discord.developer-id}") long developerId,
-            @Value("${discord.roles.verified}") long verifiedRoleId,
-            @Value("${discord.roles.booster}") long boosterRoleId,
+            DiscordProperties props,
             DiscordAccountInfoService accountService,
             @Qualifier("applicationTaskExecutor") TaskExecutor executor) {
 
-        this.developerId = developerId;
-        this.verifiedRoleId = verifiedRoleId;
-        this.boosterRoleId = boosterRoleId;
+        DiscordProperties.Roles roles = props.getRoles();
+
+        this.developerId = props.getDeveloperId();
+        this.verifiedRoleId = roles.getVerified();
+        this.boosterRoleId = roles.getBooster();
         this.accountService = accountService;
         this.executor = executor;
     }

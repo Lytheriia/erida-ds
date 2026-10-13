@@ -1,4 +1,4 @@
-package lytheriia.bot.discord.presence;
+package lytheriia.bot.discord.listeners.presence;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -12,7 +12,6 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import lytheriia.bot.db.repository.RoundSnapshotsRepository;
-import lytheriia.bot.discord.presence.data.ServerStatus;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.OnlineStatus;
 import net.dv8tion.jda.api.entities.Activity;
@@ -29,6 +28,8 @@ public class ServerPresenceUpdater {
     private volatile ServerStatus lastStatus;
     private String lastText;
 
+    private final Boolean IsDisabled = true;
+
     public ServerPresenceUpdater(JDA jda, ServerStatusClient statusClient,
             RoundSnapshotsRepository snapshots) {
         this.jda = jda;
@@ -39,6 +40,11 @@ public class ServerPresenceUpdater {
     @Scheduled(fixedRate = 30_000)
     public void updateStatus() {
         try {
+            if (IsDisabled) {
+                setPresence(OnlineStatus.DO_NOT_DISTURB, "🛠️ Тех работы");
+                return;
+            }
+
             Optional<ServerStatus> result = statusClient.fetch();
             lastStatus = result.orElse(null);
 

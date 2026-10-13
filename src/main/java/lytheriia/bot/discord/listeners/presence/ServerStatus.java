@@ -1,4 +1,4 @@
-package lytheriia.bot.discord.presence.data;
+package lytheriia.bot.discord.listeners.presence;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 

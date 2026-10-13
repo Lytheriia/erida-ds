@@ -19,9 +19,6 @@ import jakarta.validation.constraints.Pattern;
 import lytheriia.bot.db.repository.DiscordLinkRepository;
 import lytheriia.bot.db.service.DiscordLinkingService;
 
-// TODO add force updating function
-// RegisterHandler(HttpMethod.Post, "/linking/update", RequestUpdateDiscordLinkingData);
-
 @RestController
 @RequestMapping("/api/link")
 public class DiscordLinkingController {

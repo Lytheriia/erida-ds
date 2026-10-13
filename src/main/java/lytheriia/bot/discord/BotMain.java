@@ -4,11 +4,12 @@ import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import lytheriia.bot.db.service.CommandPermissionService;
+import lytheriia.bot.discord.utils.CommandDispatcher;
+import lytheriia.bot.properties.DiscordProperties;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.OnlineStatus;
@@ -38,10 +39,11 @@ public class BotMain {
         }
 
         @Bean(destroyMethod = "shutdown")
-        public JDA jda(@Value("${discord.token}") String token, @Value("${discord.guild-id}") long guildId,
-                        List<ListenerAdapter> listeners) throws InterruptedException {
+        public JDA jda(DiscordProperties props,
+                        List<ListenerAdapter> listeners, CommandDispatcher commandDispatcher)
+                        throws InterruptedException {
 
-                JDA jda = JDABuilder.createLight(token)
+                JDA jda = JDABuilder.createLight(props.getToken())
                                 .setStatus(OnlineStatus.DO_NOT_DISTURB)
                                 .setActivity(Activity.customStatus("Запуск..."))
                                 .enableIntents(GatewayIntent.GUILD_MEMBERS)
@@ -50,6 +52,8 @@ public class BotMain {
                                 .addEventListeners(listeners.toArray())
                                 .build()
                                 .awaitReady();
+
+                long guildId = props.getGuildId();
 
                 jda.getGuilds().stream()
                                 .filter(g -> g.getIdLong() != guildId)
@@ -62,6 +66,9 @@ public class BotMain {
 
                 jda.updateCommands().queue();
 
+                commandDispatcher.register(guild);
+
+                // TODO REBUILD THAT SHIT
                 jda.updateCommands().addCommands(
                                 Commands.slash("stats", "Статистика раундов")
                                                 .setDefaultPermissions(DefaultMemberPermissions.ENABLED),

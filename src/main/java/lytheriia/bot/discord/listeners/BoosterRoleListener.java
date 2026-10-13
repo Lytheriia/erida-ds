@@ -1,9 +1,9 @@
 package lytheriia.bot.discord.listeners;
 
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import lytheriia.bot.db.service.DiscordAccountInfoService;
+import lytheriia.bot.properties.DiscordProperties;
 import net.dv8tion.jda.api.events.guild.member.GuildMemberRoleAddEvent;
 import net.dv8tion.jda.api.events.guild.member.GuildMemberRoleRemoveEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
@@ -11,13 +11,14 @@ import net.dv8tion.jda.api.hooks.ListenerAdapter;
 @Component
 public class BoosterRoleListener extends ListenerAdapter {
 
-    @Value("${discord.roles.booster}")
     private long boosterRoleId;
 
     private final DiscordAccountInfoService accountService;
 
-    public BoosterRoleListener(DiscordAccountInfoService accountService) {
+    public BoosterRoleListener(DiscordAccountInfoService accountService, DiscordProperties props) {
         this.accountService = accountService;
+
+        this.boosterRoleId = props.getRoles().getBooster();
     }
 
     @Override

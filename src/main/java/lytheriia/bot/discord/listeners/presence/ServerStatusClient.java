@@ -1,4 +1,4 @@
-package lytheriia.bot.discord.presence;
+package lytheriia.bot.discord.listeners.presence;
 
 import java.io.IOException;
 import java.net.URI;
@@ -14,7 +14,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import lytheriia.bot.discord.presence.data.ServerStatus;
 import tools.jackson.databind.ObjectMapper;
 
 @Component

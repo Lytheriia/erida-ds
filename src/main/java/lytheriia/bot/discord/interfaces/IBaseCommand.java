@@ -1,0 +1,18 @@
+package lytheriia.bot.discord.interfaces;
+
+import net.dv8tion.jda.api.events.interaction.command.CommandAutoCompleteInteractionEvent;
+import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
+import net.dv8tion.jda.api.interactions.commands.build.SlashCommandData;
+
+public interface IBaseCommand {
+    SlashCommandData data();
+
+    void execute(SlashCommandInteractionEvent event);
+
+    default void autocomplete(CommandAutoCompleteInteractionEvent event) {
+    }
+
+    default boolean guarded() {
+        return true;
+    }
+}
