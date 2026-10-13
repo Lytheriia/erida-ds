@@ -28,7 +28,7 @@ public class ServerPresenceUpdater {
     private volatile ServerStatus lastStatus;
     private String lastText;
 
-    private final Boolean IsDisabled = true;
+    private final Boolean IsDisabled = false;
 
     public ServerPresenceUpdater(JDA jda, ServerStatusClient statusClient,
             RoundSnapshotsRepository snapshots) {
