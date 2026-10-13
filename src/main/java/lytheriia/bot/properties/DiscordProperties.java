@@ -14,8 +14,6 @@ public class DiscordProperties {
     private Roles roles = new Roles();
     private Long developerId;
 
-    // getters/setters для token, guildId, developerId как раньше
-
     public Roles getRoles() {
         return roles;
     }
